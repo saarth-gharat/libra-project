@@ -1,0 +1,20 @@
+{
+  "name": "libra-one",
+  "version": "1.0.0",
+  "description": "LIBRA.ONE - A Modern Digital Library Platform",
+  "private": true,
+  "scripts": {
+    "server": "cd server && node server.js",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "seed": "cd server && node seeds/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4"
+  }
+}
