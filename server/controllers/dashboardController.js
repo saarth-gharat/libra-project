@@ -40,14 +40,13 @@ exports.adminStats = async (req, res, next) => {
         order: [['created_at', 'DESC']],
         limit: 20,
       }),
-      // Monthly borrow stats for the last 6 months
       sequelize.query(
         `SELECT 
-          strftime('%Y-%m', borrow_date) as month,
+          TO_CHAR(borrow_date, 'YYYY-MM') as month,
           COUNT(*) as count
         FROM borrows
-        WHERE borrow_date >= date('now', '-6 months')
-        GROUP BY strftime('%Y-%m', borrow_date)
+        WHERE borrow_date >= NOW() - INTERVAL '6 months'
+        GROUP BY TO_CHAR(borrow_date, 'YYYY-MM')
         ORDER BY month ASC`,
         { type: sequelize.QueryTypes.SELECT }
       ),
