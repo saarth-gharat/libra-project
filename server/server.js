@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const https = require('https');
 const { sequelize } = require('./models');
 const errorHandler = require('./middleware/errorHandler');
 const schedulerService = require('./services/schedulerService');
@@ -46,6 +47,15 @@ const start = async () => {
 
     app.listen(PORT, () => {
       console.log(`LIBRA.ONE server running on port ${PORT}`);
+
+      // Self ping every 10 minutes to prevent Render free tier sleep
+      setInterval(() => {
+        https.get('https://libra-backend-i309.onrender.com/api/health', (res) => {
+          console.log('Self ping status:', res.statusCode);
+        }).on('error', (e) => {
+          console.log('Self ping error:', e.message);
+        });
+      }, 10 * 60 * 1000);
     });
 
     // Start notification scheduler
