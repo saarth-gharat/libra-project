@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - LIBRA.ONE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            padding: 40px 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .status-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 2.5rem;
+        }
+        
+        .loading {
+            background: #e0e7ff;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .message {
+            margin: 20px 0;
+            font-size: 1.1rem;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .error-message {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .success-message {
+            color: #16a34a;
+            background: #dcfce7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .redirect-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 25px;
+        }
+        
+        .redirect-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .redirect-link:hover {
+            text-decoration: underline;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LIBRA.ONE</h1>
+            <p>Verifying your email address</p>
+        </div>
+        
+        <div class="content">
+            <div class="status-icon loading" id="statusIcon">
+                ⏳
+            </div>
+            
+            <div class="message" id="message">
+                Please wait while we verify your email address...
+            </div>
+            
+            <div id="result"></div>
+            
+            <div class="redirect-info" id="redirectInfo" style="display: none;">
+                You will be redirected to the dashboard in <span id="countdown">5</span> seconds...
+                <br><br>
+                Or <a href="/login" class="redirect-link">click here</a> to go to login page.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const email = urlParams.get('email');
+        
+        const statusIcon = document.getElementById('statusIcon');
+        const message = document.getElementById('message');
+        const result = document.getElementById('result');
+        const redirectInfo = document.getElementById('redirectInfo');
+        const countdownElement = document.getElementById('countdown');
+        
+        // Function to verify email
+        async function verifyEmail() {
+            if (!token || !email) {
+                showError('Invalid verification link. Please check your email and try again.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/verification/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message);
+                    // Store token in localStorage for automatic login
+                    if (data.token) {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                    }
+                    startRedirectCountdown();
+                } else {
+                    showError(data.message || 'Verification failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showError('Network error. Please try again later.');
+            }
+        }
+        
+        function showSuccess(successMessage) {
+            statusIcon.className = 'status-icon success';
+            statusIcon.innerHTML = '✓';
+            message.innerHTML = successMessage;
+            result.innerHTML = '<div class="success-message">Your email has been successfully verified! You can now access all features of LIBRA.ONE.</div>';
+        }
+        
+        function showError(errorMessage) {
+            statusIcon.className = 'status-icon error';
+            statusIcon.innerHTML = '✗';
+            message.innerHTML = 'Email verification failed';
+            result.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+        }
+        
+        function startRedirectCountdown() {
+            redirectInfo.style.display = 'block';
+            let count = 5;
+            
+            const countdownInterval = setInterval(() => {
+                countdownElement.textContent = count;
+                count--;
+                
+                if (count < 0) {
+                    clearInterval(countdownInterval);
+                    // Redirect to dashboard or login based on user role
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    if (user.role === 'admin') {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                }
+            }, 1000);
+        }
+        
+        // Start verification when page loads
+        window.addEventListener('DOMContentLoaded', verifyEmail);
+    </script>
+</body>
+</html>
