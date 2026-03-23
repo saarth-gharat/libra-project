@@ -17,6 +17,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [success, setSuccess] = useState('');
+  const [slowWarning, setSlowWarning] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -30,8 +31,6 @@ export default function Register() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    
-    // Real-time email validation
     if (name === 'email') {
       setEmailError(validateEmail(value));
     }
@@ -41,21 +40,21 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    
-    // Validate email before submission
+
     const emailValidationError = validateEmail(form.email);
     if (emailValidationError) {
       setEmailError(emailValidationError);
       return;
     }
-    
+
     setLoading(true);
+    const slowTimer = setTimeout(() => setSlowWarning(true), 5000);
     try {
       const result = await register(form);
-      // Show success message
+      clearTimeout(slowTimer);
+      setSlowWarning(false);
       setSuccess(result.message || 'Registration successful! Please check your email to verify your account.');
       setError('');
-      // Clear form
       setForm({
         name: '',
         email: '',
@@ -65,6 +64,8 @@ export default function Register() {
         department: '',
       });
     } catch (err) {
+      clearTimeout(slowTimer);
+      setSlowWarning(false);
       setError(err.response?.data?.message || 'Registration failed');
       setSuccess('');
     } finally {
@@ -126,6 +127,7 @@ export default function Register() {
               {emailError}
             </motion.div>
           )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full name</label>
             <div className="relative">
@@ -227,6 +229,12 @@ export default function Register() {
               </div>
             </div>
           </div>
+
+          {slowWarning && (
+            <p className="text-sm text-center text-yellow-600 dark:text-yellow-400 py-2">
+              ⏳ Still working... the server is waking up, please wait a moment!
+            </p>
+          )}
 
           <button
             type="submit"
